@@ -6,6 +6,7 @@
 #include "proc.h"
 #include "defs.h"
 #include "elf.h"
+#include "rand.h"
 
 static int loadseg(pde_t *, uint64, struct inode *, uint, uint);
 
@@ -84,7 +85,19 @@ exec(char *path, char **argv)
     goto bad;
   sz = sz1;
   uvmclear(pagetable, sz-(USERSTACK+1)*PGSIZE);
-  sp = sz;
+  
+  
+
+  // Print that ASLR is being used
+  printf("\t\tUSING ASLR FOR PREVENTION OF BUFFER OVERFLOW\n");
+
+  // Add random offset to simulate ASLR
+  int rand_offset = random() % 4096;  // Random offset up to 1 page
+  sp = sz - rand_offset;  // Stack pointer randomized
+
+  printf("ASLR IMPLEMENTED: Stack Offset = %d bytes\n", rand_offset);
+
+
   stackbase = sp - USERSTACK*PGSIZE;
 
   // Push argument strings, prepare rest of stack in ustack.
