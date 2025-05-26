@@ -1,46 +1,101 @@
-xv6 is a re-implementation of Dennis Ritchie's and Ken Thompson's Unix
-Version 6 (v6).  xv6 loosely follows the structure and style of v6,
-but is implemented for a modern RISC-V multiprocessor using ANSI C.
+# Buffer Overflow Prevention in xv6 using ASLR
 
-ACKNOWLEDGMENTS
+This project demonstrates how to prevent buffer overflow attacks in the xv6 operating system by implementing Address Space Layout Randomization (ASLR). It modifies the xv6 kernel to introduce randomness in the stack layout of each process and includes a user-level overflow simulation to validate the defense mechanism.
 
-xv6 is inspired by John Lions's Commentary on UNIX 6th Edition (Peer
-to Peer Communications; ISBN: 1-57398-013-7; 1st edition (June 14,
-2000)).  See also https://pdos.csail.mit.edu/6.1810/, which provides
-pointers to on-line resources for v6.
+##  Objective
 
-The following people have made contributions: Russ Cox (context switching,
-locking), Cliff Frey (MP), Xiao Yu (MP), Nickolai Zeldovich, and Austin
-Clements.
+To enhance memory safety in the xv6 operating system by applying ASLR, which makes stack memory locations unpredictable, thus reducing the success rate of control hijacking through buffer overflow attacks.
 
-We are also grateful for the bug reports and patches contributed by
-Takahiro Aoyagi, Marcelo Arroyo, Silas Boyd-Wickizer, Anton Burtsev,
-carlclone, Ian Chen, Dan Cross, Cody Cutler, Mike CAT, Tej Chajed,
-Asami Doi,Wenyang Duan, eyalz800, Nelson Elhage, Saar Ettinger, Alice
-Ferrazzi, Nathaniel Filardo, flespark, Peter Froehlich, Yakir Goaron,
-Shivam Handa, Matt Harvey, Bryan Henry, jaichenhengjie, Jim Huang,
-Matúš Jókay, John Jolly, Alexander Kapshuk, Anders Kaseorg, kehao95,
-Wolfgang Keller, Jungwoo Kim, Jonathan Kimmitt, Eddie Kohler, Vadim
-Kolontsov, Austin Liew, l0stman, Pavan Maddamsetti, Imbar Marinescu,
-Yandong Mao, Matan Shabtay, Hitoshi Mitake, Carmi Merimovich, Mark
-Morrissey, mtasm, Joel Nider, Hayato Ohhashi, OptimisticSide,
-phosphagos, Harry Porter, Greg Price, RayAndrew, Jude Rich, segfault,
-Ayan Shafqat, Eldar Sehayek, Yongming Shen, Fumiya Shigemitsu, snoire,
-Taojie, Cam Tenny, tyfkda, Warren Toomey, Stephen Tu, Alissa Tung,
-Rafael Ubal, Amane Uehara, Pablo Ventura, Xi Wang, WaheedHafez,
-Keiichi Watanabe, Lucas Wolf, Nicolas Wolovick, wxdao, Grant Wu, x653,
-Jindong Zhang, Icenowy Zheng, ZhUyU1997, and Zou Chang Wei.
+##  Project Architecture
 
-ERROR REPORTS
+- A custom pseudo-random number generator is introduced in the kernel.
+- During process creation, a random offset is added to the user stack pointer.
+- A buffer overflow simulation program is written in user space.
+- Output logs and traps are used to observe memory behavior under normal and overflow conditions.
 
-Please send errors and suggestions to Frans Kaashoek and Robert Morris
-(kaashoek,rtm@mit.edu).  The main purpose of xv6 is as a teaching
-operating system for MIT's 6.1810, so we are more interested in
-simplifications and clarifications than new features.
+##  Features Implemented
 
-BUILDING AND RUNNING XV6
+- ASLR applied to stack memory during process execution.
+- Random stack offset generated using custom logic.
+- Overflow simulation user program to test stack corruption.
+- Kernel output confirms ASLR effectiveness (random stack offset, usertrap crash, etc.).
+- Shell integration and validation through logs and testing.
 
-You will need a RISC-V "newlib" tool chain from
-https://github.com/riscv/riscv-gnu-toolchain, and qemu compiled for
-riscv64-softmmu.  Once they are installed, and in your shell
-search path, you can run "make qemu".
+##  Team Members & Contributions
+
+| Member Name     | Contribution                                             |
+|------------------|----------------------------------------------------------|
+| Paras Sharma     | Implemented random number logic and integrated kernel build |
+| Shreyas Bedi     | Developed buffer overflow simulation test cases         |
+| Himanshu Singh   | Applied ASLR logic to process creation in exec          |
+| Prerak Sharma    | Testing, documentation, logs, and presentation prep     |
+
+##  Project Structure
+
+xv6-riscv/
+├── kernel/         # Kernel source files (modified for ASLR logic)
+├── user/           # User programs (includes overflow test)
+├── mkfs/           # Filesystem builder
+├── Makefile        # Build configuration (updated for rand.c)
+├── README.md       # Project documentation
+
+##  How ASLR Works in xv6
+
+1. A random value is generated during process initialization.
+2. This value is used to shift the stack start address randomly.
+3. On each execution, the stack location changes.
+4. This makes it harder for attackers to reliably overwrite the return address.
+
+##  Test Results & Validation
+
+| Test Scenario                | Status | Observation                                      |
+|-----------------------------|--------|--------------------------------------------------|
+| Normal input without overflow | ✅ Pass | Program completes safely                         |
+| Overflow on original xv6     | ✅ Pass | Return address hijacked → leads to crash         |
+| Overflow with ASLR enabled   | ✅ Pass | Unpredictable memory → hijack fails → trap raised|
+
+Sample Output:
+ASLR IMPLEMENTED: Stack Offset = 1312 bytes
+1. BUFFER OVERFLOW ATTACK SIMULATION
+Enter something:
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+usertrap(): unexpected scause 0xc pid=4
+sepc=0x6161616161616161 stval=0x6161616161616161
+
+##  How to Build & Run
+
+1. Clone the repository:
+   git clone https://github.com/ParasSharma101/buffer-overflow-prevention-in-xv6.git
+   cd buffer-overflow-prevention-in-xv6
+
+2. Build the system:
+   make clean
+   make qemu
+
+3. Run the test in xv6 shell:
+   $ overflow
+
+##  Important Commits
+
+- Initial commit with xv6 base setup
+- Integrated ASLR logic in process initialization
+- Added random number generator and test program
+- Updated Makefile and build system to include changes
+
+##  Project Outcome
+
+- Working ASLR-enabled xv6 kernel
+- Demonstrated buffer overflow attack mitigation
+- Successful validation through logs and crash outputs
+- Final codebase, documentation, and presentation completed
+
+##  Future Scope
+
+- Extend ASLR to other segments (heap, data, code)
+- Combine with stack canaries for improved protection
+- Add memory protection flags (non-executable stack)
+- Automate security testing using fuzzed inputs
+
+##  License
+
+This project is based on MIT's xv6 operating system and is intended for educational and research use only.
